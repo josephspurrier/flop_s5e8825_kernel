@@ -13,7 +13,8 @@ jobs:
       # so ccache is already in the compile path. What was missing is a cache
       # directory that survives the job, plus the settings that let a restored
       # cache actually hit.
-      CCACHE_DIR: ${{ runner.temp }}/ccache
+      # NOTE: CCACHE_DIR is deliberately NOT set here. Job-level env cannot use
+      # the runner context; it is exported from the Configure ccache step below.
       # Required. The default compilercheck is "mtime", and a fresh checkout
       # gives the vendored clang a new mtime on every run, so every object would
       # miss and the restored cache would be dead weight. Hash the contents.
@@ -53,6 +54,10 @@ jobs:
 
       - name: Configure ccache
         run: |
+          # RUNNER_TEMP is available to the shell; ${{ runner.temp }} is not
+          # usable in job-level env, so publish CCACHE_DIR for later steps here.
+          echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+          export CCACHE_DIR="$RUNNER_TEMP/ccache"
           mkdir -p "$CCACHE_DIR"
           ccache -M 2G
           ccache -z
