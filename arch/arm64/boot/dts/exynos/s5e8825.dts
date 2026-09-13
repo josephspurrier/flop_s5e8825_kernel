@@ -4038,6 +4038,39 @@
 			phandle = <0x9f>;
 		};
 
+		/*
+		 * ramoops: a per-boot console log that survives a reset.
+		 *
+		 * CONFIG_PSTORE_RAM, PSTORE_CONSOLE and PSTORE_PMSG are already =y in
+		 * s5e8825-unified_defconfig, but pstore stays inert because nothing
+		 * declares a memory region for it, so /sys/fs/pstore is always empty.
+		 *
+		 * Why this is needed: the only existing way to read a failed boot is
+		 * /proc/last_kmsg, which is Samsung's debug-snapshot log_kernel ring at
+		 * 0xf0010000 (0x200000 = the 2 MB that last_kmsg returns). On a forced
+		 * reset DSS skips re-init ("snapshot_init: skip ... because PIN RESET"),
+		 * so that ring ACCUMULATES sessions with kernel timestamps restarting at
+		 * 0 in each, interleaved per-CPU and bit-corrupted. pstore instead gives
+		 * one clean file per boot: /sys/fs/pstore/console-ramoops-0.
+		 *
+		 * Address choice: 0xf1c00000 is unclaimed by any node in this tree. The
+		 * debug-snapshot carveouts end at 0xf1b90000 (log_kevents 0xf1690000 +
+		 * 0x500000), so this sits immediately above them, inside RAM, away from
+		 * the modem (0x8_8000_0000), GNSS (0xee000000), s2mpu (0xc1800000),
+		 * seclog (0xc3000000) and bcmdbg (0xff000000) regions.
+		 *
+		 * To revert: delete this node. Nothing else references it.
+		 */
+		ramoops@f1c00000 {
+			compatible = "ramoops";
+			reg = <0x00 0xf1c00000 0x100000>;
+			console-size = <0x80000>;
+			record-size = <0x20000>;
+			pmsg-size = <0x20000>;
+			ecc-size = <0x00>;
+			no-map;
+		};
+
 		log_backtrace {
 			compatible = "log_backtrace";
 			alloc-ranges = <0x00 0x80000000 0x78000000>;
