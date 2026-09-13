@@ -4059,6 +4059,12 @@
 		 * the modem (0x8_8000_0000), GNSS (0xee000000), s2mpu (0xc1800000),
 		 * seclog (0xc3000000) and bcmdbg (0xff000000) regions.
 		 *
+		 * NO no-map ON PURPOSE. v1 of this node carried no-map and the device
+		 * boot-looped: unmapping a 1 MB hole inside a range the bootloader has
+		 * already populated is not safe here, and pstore does not need it. The
+		 * region is reserved (so the allocator will not hand it out) but stays in
+		 * the linear map, which is how ramoops is declared on most vendor trees.
+		 *
 		 * To revert: delete this node. Nothing else references it.
 		 */
 		ramoops@f1c00000 {
@@ -4068,7 +4074,6 @@
 			record-size = <0x20000>;
 			pmsg-size = <0x20000>;
 			ecc-size = <0x00>;
-			no-map;
 		};
 
 		log_backtrace {
